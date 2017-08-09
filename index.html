@@ -1,0 +1,24 @@
+<html>
+<head>
+ <script src="angular.min.js"></script>
+ <script src="keys.js"></script>
+ <script src="https://code.angularjs.org/1.2.1/angular-sanitize.min.js"></script>
+ <link href=bootstrap.min.css rel=stylesheet></link>
+</head>
+<body ng-app="appX">
+<div ng-controller="appCtrl">
+ <div class="row">
+    <div class="col-md-4">
+      <textarea cols="50" rows="30" ng-model="keystext"></textarea>
+    </div>
+    <div class="col-md-2">
+        <input type="checkbox" ng-model="withkeys">With Keys</input>
+	<br>
+      	<button ng-click="parse()">Parse</button>
+    </div>
+    	<pre class="col-md-4" ng-bind-html="result" />     
+    </div>
+ </div>
+</div>
+</body>
+</html>
