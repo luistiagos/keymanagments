@@ -22,8 +22,31 @@ app.controller("appCtrl", function($scope, $sanitize) {
   }
 
   $scope.keysRepeats() {
-    
+    var arrTemp = [];
+    var arr =  $scope.keystext.split('\n');
+    for (var i in arr) {
+      var linha = arr[i];
+      var desc = arr[i].substr(linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)).trim();
+      arrTemp.push(desc);
+    }
 
+    for (var i in arrTemp) {
+      var item = $scope._getLinhaRepeat(arrTemp[i],arrTemp);
+      if (item) {
+	arrResult.push(item);
+      }
+    }
+
+   $scope.result = $sanitize(arrResult.join('\n'));
+  }
+
+  $scope._getLinhaRepeat(str,arr) {
+    for (var i in arr) {
+      if (arr[i] == str) {
+	return "linha:"+i+" item:" + arr[i] + "\n";
+      }
+    }
+   return undefined;
   }
 
   $scope.parseRemoveKeys = function() {
