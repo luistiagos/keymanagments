@@ -12,11 +12,15 @@
       <textarea cols="50" rows="30" ng-model="keystext"></textarea>
     </div>
     <div class="col-md-2">
-        <input type="checkbox" ng-model="withkeys">With Keys</input>
 	<select ng-model="origem">
 	  <option value="1">Bundlestars</option>
-	  <option value="2">Gogobundle</option>	
+	  <option value="2">Gogobundle</option>
+	  <option value="3">Remove Keys</option>
+	  <option value="4">Remove Descs</option>
+	  <option value="5">Keys Repeat</option>
+	  <option value="6">Descs Repeat</option>
 	</select>
+	<input type="checkbox" ng-show="origem == 1" ng-model="withkeys">With Keys</input>
 	<br>
       	<button ng-click="parse()">Parse</button>
     </div>

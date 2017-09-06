@@ -2,12 +2,68 @@ var app = angular.module("appX", ['ngSanitize']);
 app.controller("appCtrl", function($scope, $sanitize) {
   
   $scope.parse = function() {
-    if ($scope.origem == 1) {
-      $scope.parseBundlestar();
+    switch(parseInt($scope.origem)) {
+      case 1: 
+        $scope.parseBundlestar();
+        break;
+      case 2: 
+        $scope.parseGogobundle();
+        break;
+      case 3:
+        $scope.parseRemoveKeys();
+	break;
+      case 4:
+        $scope.parseRemoveDescs();
+	break;
+      case 5:
+	$scope.keysRepeats();
+	break; 
     }
-    else {
-      $scope.parseGogobundle();
-    }  
+  }
+
+  $scope.keysRepeats() {
+    
+
+  }
+
+  $scope.parseRemoveKeys = function() {
+    var arrResult = [];
+    var arr =  $scope.keystext.split('\n');
+    arr =  $scope._removeKeys(arr);
+    for (var i in arr) {
+      arrResult.push("- " + arr[i]);
+    }
+   $scope.result = $sanitize(arrResult.join('\n'));
+  }
+
+  $scope.parseRemoveDescs = function() {
+    var arrResult = [];
+    var arr =  $scope.keystext.split('\n');
+    arr =  $scope._removeDesc(arr);
+    for (var i in arr) {
+      arrResult.push(arr[i]);
+    }
+   $scope.result = $sanitize(arrResult.join('\n'));
+  }
+
+  $scope._removeKeys = function(arr) {
+    var arrResult = [];
+    for (var i in arr) {
+      var linha = arr[i];
+      var desc = arr[i].substr(0,linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)).trim();
+      arrResult.push(desc);
+    }
+    return arrResult;
+  }
+
+  $scope._removeDesc = function(arr) {
+    var arrResult = [];
+    for (var i in arr) {
+      var linha = arr[i];
+      var desc = arr[i].substr(linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)).trim();
+      arrResult.push(desc);
+    }
+    return arrResult;
   }
   
   $scope.parseGogobundle = function() {
