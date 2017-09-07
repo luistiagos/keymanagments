@@ -11,18 +11,22 @@ app.controller("appCtrl", function($scope, $sanitize) {
         break;
       case 3:
         $scope.parseRemoveKeys();
-	break;
+	      break;
       case 4:
         $scope.parseRemoveDescs();
-	break;
+	      break;
       case 5:
-	$scope.keysRepeats();
-	break; 
+	      $scope.keysRepeats();
+	      break; 
+      case 6:
+        $scope.descRepeats();
+        break;
     }
   }
 
-  $scope.keysRepeats() {
+  $scope.keysRepeats = function() {
     var arrTemp = [];
+    var arrResult = [];
     var arr =  $scope.keystext.split('\n');
     for (var i in arr) {
       var linha = arr[i];
@@ -31,22 +35,42 @@ app.controller("appCtrl", function($scope, $sanitize) {
     }
 
     for (var i in arrTemp) {
-      var item = $scope._getLinhaRepeat(arrTemp[i],arrTemp);
+      var item = $scope._getLinhaRepeat(i,arrTemp);
       if (item) {
-	arrResult.push(item);
+	      arrResult.push(item);
       }
     }
 
    $scope.result = $sanitize(arrResult.join('\n'));
   }
 
-  $scope._getLinhaRepeat(str,arr) {
+  $scope.descRepeats = function() {
+    var arrTemp = [];
+    var arrResult = [];
+    var arr =  $scope.keystext.split('\n');
     for (var i in arr) {
-      if (arr[i] == str) {
-	return "linha:"+i+" item:" + arr[i] + "\n";
+      var linha = arr[i];
+      var desc = arr[i].substr(0, linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)).trim();
+      arrTemp.push(desc);
+    }
+
+    for (var i in arrTemp) {
+      var item = $scope._getLinhaRepeat(i,arrTemp);
+      if (item) {
+	      arrResult.push(item);
       }
     }
-   return undefined;
+
+   $scope.result = $sanitize(arrResult.join('\n'));
+  }
+
+  $scope._getLinhaRepeat = function(index,arr) {
+    for (var i in arr) {
+      if (i != index && arr[i] == arr[index]) {
+	      return "linha:"+i+" item:" + arr[i] + "\n";
+      }
+    }
+    return undefined;
   }
 
   $scope.parseRemoveKeys = function() {
@@ -111,8 +135,8 @@ app.controller("appCtrl", function($scope, $sanitize) {
           if (!ret[j]) {
             ret[j] = [];
           }
-	  ret[j].push(repeats[j]);
-	  adicionados.push(repeats[j]);
+	        ret[j].push(repeats[j]);
+	        adicionados.push(repeats[j]);
         }
       }
     }	
