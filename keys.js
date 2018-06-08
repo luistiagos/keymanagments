@@ -189,11 +189,43 @@ app.controller("appCtrl", function($scope, $sanitize) {
   }
 
   $scope.copyAll = function () {
+    if (!navigator.clipboard) {
+      $scope.fallbackCopyTextToClipboard($scope.result);
+      return;
+    }
+
     navigator.clipboard.writeText($scope.result).then(function() {
       console.log('Async: Copying to clipboard was successful!');
     }, function(err) {
       console.error('Async: Could not copy text: ', err);
     });
+  }
+
+  $scope.fallbackCopyTextToClipboard = function (text) {
+
+    let target = document.getElementById('result');
+    let range; 
+    let selection;
+    
+    if (document.body.createTextRange) {
+      range = document.body.createTextRange();
+      range.moveToElementText(target);
+      range.select();
+    } else if (window.getSelection) {
+      selection = window.getSelection();
+      range = document.createRange();
+      range.selectNodeContents(target);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  
+    try {
+      var successful = document.execCommand('copy');
+      var msg = successful ? 'successful' : 'unsuccessful';
+      console.log('Fallback: Copying text command was ' + msg);
+    } catch (err) {
+      console.error('Fallback: Oops, unable to copy', err);
+    }
   }
 
 });
