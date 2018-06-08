@@ -1,5 +1,5 @@
 var app = angular.module("appX", ['ngSanitize']);
-app.controller("appCtrl", function($scope, $sanitize) {
+app.controller("appCtrl", function($scope, $sanitize, $http) {
   
   $scope.parse = function() {
     switch(parseInt($scope.origem)) {
@@ -20,6 +20,9 @@ app.controller("appCtrl", function($scope, $sanitize) {
 	      break; 
       case 6:
         $scope.descRepeats();
+        break;
+      case 7:
+        $scope.adicionarDB();
         break;
     }
   }
@@ -226,6 +229,23 @@ app.controller("appCtrl", function($scope, $sanitize) {
     } catch (err) {
       console.error('Fallback: Oops, unable to copy', err);
     }
+  }
+
+
+  $scope.adicionarDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let arrResult = [];
+    let arrDesc = [];    
+    let ret = [];
+
+    for (let i in arr) {
+      let linha = arr[i];
+      let id = linha.substr(0,linha.search(/\s/g)).trim();
+      let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
+      arrResult.push({appId:id, description:desc});
+    }
+
+    console.log(arrResult);
   }
 
 });
