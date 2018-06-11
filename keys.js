@@ -1,5 +1,5 @@
 var app = angular.module("appX", ['ngSanitize']);
-app.controller("appCtrl", function($scope, $sanitize, $http) {
+app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   
   $scope.parse = function() {
     switch(parseInt($scope.origem)) {
@@ -22,7 +22,16 @@ app.controller("appCtrl", function($scope, $sanitize, $http) {
         $scope.descRepeats();
         break;
       case 7:
-        $scope.adicionarDB();
+        $scope.addGamesDB();
+        break;
+      case 8:
+        $scope.addGamesKeysDB();
+        break;
+      case 9:
+        $scope.findGamesKeysDB();
+        break;
+      case 10:
+        $scope.listRandomGamesKeysDB();
         break;
     }
   }
@@ -232,7 +241,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http) {
   }
 
 
-  $scope.adicionarDB = function() {
+  $scope.addGamesDB = function() {
     let arr =  $scope.keystext.split('\n');
     let arrResult = [];
     let arrDesc = [];    
@@ -245,7 +254,141 @@ app.controller("appCtrl", function($scope, $sanitize, $http) {
       arrResult.push({appId:id, description:desc});
     }
 
-    console.log(arrResult);
+    this.insert(arrResult,'games');
+  }
+
+  $scope.insert = function(games, dbname) {
+    var req = {
+      method: 'POST',
+      url: 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/'+dbname+'?apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw',
+      headers: {
+        'Content-Type': "application/json"
+      },
+      data: JSON.stringify(games)
+     }
+
+     $http(req).then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
+  }
+
+  $scope.addGamesKeysDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let arrResult = [];
+
+    for (let i in arr) {
+      let linha = arr[i];
+      let regex = linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)
+      let desc = linha.substr(0,regex).trim();
+      let key = linha.substr(regex).trim();
+      arrResult.push({
+        appId:undefined, 
+        description:desc, 
+        key:key,
+        priceRS:undefined,
+        priceUS:undefined, 
+        active:true});
+    }
+
+    this.insert(arrResult,'gameskeys');
+  }
+
+  $scope.findGamesKeysDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+
+    for (let i in arr) {
+      let linha = arr[i].trim();
+      promises.push($scope.getGameKeysDB({description:linha, active:true}));
+    }
+
+    $scope.executeFindKeysPromisse(promises);
+  }
+
+  $scope.executeFindKeysPromisse = function(promises) {
+    $q.all(promises).then((values) => {
+      let arrResult = values.map((item)=>{
+        return item.data[0].description + '  ' + item.data[0].key;
+      }); 
+      
+      this.result = '';
+      for (let i in arrResult) {
+        this.result += arrResult[i] + "\n";
+      }
+    });
+  }
+
+  $scope.listRandomGamesKeysDB = function() {
+    let quantidade =  parseInt($scope.keystext.trim());
+    let promises = [];
+    
+    $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', {active:true})
+      .then((res)=>{
+        console.log(res);
+        let arrResult = res.data.values;
+        console.log(arrResult);
+
+        arrResult = $scope.shuffle(arrResult);
+        let max = (quantidade > arrResult.length)?arrResult.length:quantidade;
+
+        for (let i = 0;i < max; i++) {
+          let description = arrResult[i].trim();
+          promises.push($scope.getGameKeysDB({description:description, active:true}));
+        }
+
+        $scope.executeFindKeysPromisse(promises);
+      }
+    );
+  }
+
+
+  $scope.getGameKeysDB = function(params, limit) {
+    
+    let strparams = JSON.stringify(params);
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?q='+strparams;
+    if (limit && limit > 0) {
+      query += 'l=' + limit;
+    }
+    
+    query += '&apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw';
+    console.log(query);
+    
+    return $http({
+      method: 'GET',
+      url: query
+    });
+  }
+
+  $scope.listDistinctDB = function(dbname, colldistinct, fieldDistinct, params) {
+    
+    let command = JSON.stringify( {"distinct": colldistinct,"key": fieldDistinct,"query": params} );
+
+    let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw'
+    console.log(url);
+    console.log(command);
+
+    var req = {
+      method: 'POST',
+      url: url,
+      headers: {
+        'Content-Type': "application/json"
+      },
+      data: command
+     }
+
+     return $http(req);
+  }
+
+  $scope.shuffle = function(array) {
+    let currentIndex = array.length, temporaryValue, randomIndex;
+  
+    while (0 !== currentIndex) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+  
+    return array;
   }
 
 });
