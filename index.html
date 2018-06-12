@@ -9,7 +9,7 @@
 	<div ng-controller="appCtrl">
 	 <div class="row">
 			<div class="col-md-4">
-				<textarea cols="50" rows="30" ng-model="keystext"></textarea>
+				<textarea cols="70" rows="30" ng-model="keystext"></textarea>
 			</div>
 			<div class="col-md-2">
 				<select ng-model="origem">
@@ -26,8 +26,9 @@
 				</select>
 				<input type="checkbox" ng-show="origem == 1" ng-model="withkeys">With Keys</input>
 				<br>
-				<button ng-click="parse()">Parse</button>
+				<button ng-click="parse()">Execute Action</button>
 				<button ng-if="result" ng-click="copyAll()">Copy All</button>
+				<button ng-if="habilitaDeleteKeys()" ng-click="desativarKeys()">Delete All</button>
 			</div>
 			<pre id="result" class="col-md-4" ng-bind-html="result" />     
 			</div>

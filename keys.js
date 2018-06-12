@@ -1,7 +1,12 @@
 var app = angular.module("appX", ['ngSanitize']);
 app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   
+
   $scope.parse = function() {
+
+    this.apiKey = localStorage.getItem('ApiKey');
+    this.comando = 0;
+
     switch(parseInt($scope.origem)) {
       case 1: 
         $scope.parseBundlestar();
@@ -29,11 +34,17 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         break;
       case 9:
         $scope.findGamesKeysDB();
+        this.comando = 9;
         break;
       case 10:
         $scope.listRandomGamesKeysDB();
+        this.comando = 10;
         break;
     }
+  }
+
+  $scope.habilitaDeleteKeys = function() {
+    return this.comando == 9 || this.comando == 10; 
   }
 
   $scope.keysRepeats = function() {
@@ -260,7 +271,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.insert = function(games, dbname) {
     var req = {
       method: 'POST',
-      url: 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/'+dbname+'?apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw',
+      url: 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/'+dbname+'?apiKey=' + this.apiKey,
       headers: {
         'Content-Type': "application/json"
       },
@@ -306,12 +317,17 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.executeFindKeysPromisse = function(promises) {
     $q.all(promises).then((values) => {
       let arrResult = values.map((item)=>{
+        if (!item || !item.data || !item.data[0]) {
+          return undefined;
+        }
         return item.data[0].description + '  ' + item.data[0].key;
       }); 
       
       this.result = '';
       for (let i in arrResult) {
-        this.result += arrResult[i] + "\n";
+        if (arrResult[i]) {
+          this.result += arrResult[i] + "\n";
+        }
       }
     });
   }
@@ -348,7 +364,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       query += 'l=' + limit;
     }
     
-    query += '&apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw';
+    query += '&apiKey=' + this.apiKey;
     console.log(query);
     
     return $http({
@@ -361,7 +377,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     
     let command = JSON.stringify( {"distinct": colldistinct,"key": fieldDistinct,"query": params} );
 
-    let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?apiKey=tqiAxDRIsNok9xYG0ldq0B6RD1b9tUJw'
+    let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?apiKey=' + this.apiKey;
     console.log(url);
     console.log(command);
 
@@ -389,6 +405,66 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
   
     return array;
+  }
+
+  $scope.desativarKeys = function() {
+    if (!this.result) {
+      this.result = 'Sem resultados para exclusão.';
+      return;
+    }
+
+    let array = this.result.split(/\r|\n/);
+    let promises = [];
+
+    for (index in array) {
+      let linha = array[index];
+      if (linha && linha.trim().length > 0) {
+        let regex = linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g);
+        let key = linha.substr(regex).trim();
+        promises.push($scope.desativarKey(key));
+      }
+    }
+
+    $q.all(promises).then((values) => {
+      let count = 0;
+      for (index in values) {
+        count += (values[index].status == 200)?1:0;
+      }
+      alert(count + ' Removidas');
+   }); 
+
+    /*
+    this.result = '';
+    let promises = [];
+
+    for (index in this.listKeys) {
+      promises.push($scope.desativarKey(this.listKeys[index]));
+    }
+
+    $q.all(promises).then((values) => {
+       let count = 0;
+       for (index in values) {
+         count += (values[index].status == 200)?1:0;
+       }
+
+       this.result = count + ' Removidas';
+       alert(count + ' Removidas');
+    }); 
+    */
+  }
+
+  $scope.desativarKey = function(key) {
+    let url = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?apiKey=' + this.apiKey + '&q={"key":"'+key+'"}';
+    let req = {
+      method: 'PUT',
+      url: url,
+      headers: {
+        'Content-Type': "application/json"
+      },
+      data: JSON.stringify( { "$set" : { "active" : false } } )
+     }
+
+     return $http(req);
   }
 
 });
