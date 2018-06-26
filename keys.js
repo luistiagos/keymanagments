@@ -40,6 +40,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         $scope.listRandomGamesKeysDB();
         this.comando = 10;
         break;
+      case 11:
+        $scope.generateReedemCode();
+        this.comando = 11;
+      break;
     }
   }
 
@@ -265,7 +269,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       arrResult.push({appId:id, description:desc});
     }
 
-    this.insert(arrResult,'games');
+    this.insert(arrResult,'games').then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
   }
 
   $scope.insert = function(games, dbname) {
@@ -278,7 +282,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       data: JSON.stringify(games)
      }
 
-     $http(req).then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
+     return $http(req);
   }
 
   $scope.addGamesKeysDB = function() {
@@ -299,7 +303,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         active:true});
     }
 
-    this.insert(arrResult,'gameskeys');
+    this.insert(arrResult,'gameskeys').then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
   }
 
   $scope.findGamesKeysDB = function() {
@@ -432,25 +436,6 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       }
       alert(count + ' Removidas');
    }); 
-
-    /*
-    this.result = '';
-    let promises = [];
-
-    for (index in this.listKeys) {
-      promises.push($scope.desativarKey(this.listKeys[index]));
-    }
-
-    $q.all(promises).then((values) => {
-       let count = 0;
-       for (index in values) {
-         count += (values[index].status == 200)?1:0;
-       }
-
-       this.result = count + ' Removidas';
-       alert(count + ' Removidas');
-    }); 
-    */
   }
 
   $scope.desativarKey = function(key) {
@@ -465,6 +450,44 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
      }
 
      return $http(req);
+  }
+
+  $scope.generateReedemCode = function() {
+    let arr =  $scope.keystext.split('\n');
+    let arrKeys = [];
+
+    for (let i in arr) {
+      let linha = arr[i];
+      let regex = linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)
+      let desc = linha.substr(0,regex).trim();
+      let key = linha.substr(regex).trim();
+      arrKeys.push(desc + '   ' + key); 
+    }
+
+    let code = this.createReedemCode();
+
+    let reedemcode = {
+      code:code,
+      keys:arrKeys
+    };
+    this.insert(reedemcode,'reedemcodes').then((data)=> this.result = code, (data)=> this.result = "error:" + data);
+  }
+
+
+  $scope.createReedemCode = function() {
+    let arrChars = ['a','b','c','d','e','f','g','h','i','j',
+    'k','l','m','n','o','p','q','r','s','t','u','v','x','y','z',
+    '1','2','3','4','5','6','7','8','9','0'];
+
+    let code = '';
+
+    for (let i=0;i < 7;i++) {
+      let index = Math.floor(Math.random() * arrChars.length);
+      let upperCase = Math.floor(Math.random() * 2);
+      code += (upperCase == 1)? arrChars[index].toUpperCase():arrChars[index];
+    }
+
+    return code;
   }
 
 });
