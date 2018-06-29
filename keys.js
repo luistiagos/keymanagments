@@ -1,12 +1,14 @@
 var app = angular.module("appX", ['ngSanitize']);
 app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   
+  $scope.init = function() {
+    this.apiKey = localStorage.getItem('ApiKey');
+    this.countKeys = 0;
+    this.comando = 0;
+    $scope.countGameKeys();
+  }
 
   $scope.parse = function() {
-
-    this.apiKey = localStorage.getItem('ApiKey');
-    this.comando = 0;
-
     switch(parseInt($scope.origem)) {
       case 1: 
         $scope.parseBundlestar();
@@ -30,7 +32,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         $scope.addGamesDB();
         break;
       case 8:
-        $scope.addGamesKeysDB();
+        $scope.addGamesKeys();
         break;
       case 9:
         $scope.findGamesKeysDB();
@@ -188,7 +190,6 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
    return arrRes;
   }
 
-
   $scope.parseBundlestar = function() {
     var arr =  $scope.keystext.split("Copy");
     var result = "";
@@ -234,6 +235,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let range; 
     let selection;
     
+    selection = window.getSelection();
+    range = document.createRange();
+    range.selectNodeContents(target);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    /*
     if (document.body.createTextRange) {
       range = document.body.createTextRange();
       range.moveToElementText(target);
@@ -245,7 +252,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       selection.removeAllRanges();
       selection.addRange(range);
     }
-  
+    */
     try {
       var successful = document.execCommand('copy');
       var msg = successful ? 'successful' : 'unsuccessful';
@@ -255,6 +262,14 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
   }
 
+  $scope.countGameKeys = function() {
+    $scope.countGameKeysDB({active:true}).then(
+      (data) => {
+        console.log(data.data);
+        this.countKeys = data.data;
+      }
+    );
+  }
 
   $scope.addGamesDB = function() {
     let arr =  $scope.keystext.split('\n');
@@ -285,6 +300,19 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
      return $http(req);
   }
 
+  $scope.addGamesKeys = function() {
+    $scope.addGamesKeysDB().then(
+      (data)=> {
+        this.result = 'Insert Suceffull ' + data.data.n + ' inserted';
+        this.keystext = '';
+        $scope.countGameKeys();
+      }, 
+      (error)=> {
+        this.result = "error:" + error;
+      }
+    );
+  }
+
   $scope.addGamesKeysDB = function() {
     let arr =  $scope.keystext.split('\n');
     let arrResult = [];
@@ -303,7 +331,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         active:true});
     }
 
-    this.insert(arrResult,'gameskeys').then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
+    return this.insert(arrResult,'gameskeys');
   }
 
   $scope.findGamesKeysDB = function() {
@@ -377,10 +405,20 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     });
   }
 
-  $scope.listDistinctDB = function(dbname, colldistinct, fieldDistinct, params) {
+  $scope.countGameKeysDB = function(params) {
+    let strparams = JSON.stringify(params);
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?q='+strparams;
+    query += '&c=true&apiKey=' + this.apiKey;
     
-    let command = JSON.stringify( {"distinct": colldistinct,"key": fieldDistinct,"query": params} );
+    return $http({
+      method: 'GET',
+      url: query
+    });
+  }
 
+  $scope.listDistinctDB = function(dbname, colldistinct, fieldDistinct, params) {
+
+    let command = JSON.stringify( {"distinct": colldistinct,"key": fieldDistinct,"query": params} );
     let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?apiKey=' + this.apiKey;
     console.log(url);
     console.log(command);
