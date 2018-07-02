@@ -184,21 +184,28 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     for (var i in arr) {
       var descArr = arr[i].substr(0,arr[i].search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)).trim();
       if (desc == descArr) {
-  	arrRes.push(arr[i]);
+  	    arrRes.push(arr[i]);
       }
     }
    return arrRes;
   }
 
   $scope.parseBundlestar = function() {
-    var arr =  $scope.keystext.split("Copy");
-    var result = "";
-    for (var i=0;i<arr.length;i++) {
-       var res = arr[i].replace(/(\r\n|\n|\r)/gm, "");
-       if (!$scope.withkeys) {
-         res = "- " + res.replace(/[\w]{5}-[\w]{5}-[\w]{5}/g,"");
-       }
-       result += $scope.removeDuplicates(res) + "<br>";
+    let arr =  $scope.keystext.split('\n');
+    let arrFiltered = [];
+    let result = "";
+    for (let i=0;i<arr.length;i++) {
+      let val = arr[i].trim();
+      if (val && 
+         val.indexOf('How Do I Redeem My Key?') < 0 && val.indexOf('example') < 0) {
+        arrFiltered.push(val);
+      }
+    }
+
+    console.log('arrFiltered',arrFiltered);
+
+    for (let i=0;i<arrFiltered.length-1;i=i+2) {
+      result += arrFiltered[i] + '  ' + arrFiltered[i+1] + '\n';
     }
    	
     $scope.result = $sanitize(result);
