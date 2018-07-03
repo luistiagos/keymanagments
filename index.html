@@ -6,7 +6,7 @@
 	 <link href=bootstrap.min.css rel=stylesheet></link>
 	</head>
 	<body ng-app="appX"  ng-controller="appCtrl" ng-init="init()">
-		<div class="row">
+		<div class="row" ng-show="isAllow()">
 			<div class="col-md-4">
 				<textarea cols="70" rows="30" ng-model="keystext"></textarea>
 			</div>
@@ -21,6 +21,7 @@
 					<option value="7">Adicionar Games</option>
 					<option value="8">Adicionar Keys</option>
 					<option value="9">Buscar Games</option>
+					<option value="12">Buscar Keys</option>
 					<option value="10">Listar Random Games</option>
 					<option value="11">Gerar Reedem Code</option>
 				</select>
@@ -32,7 +33,7 @@
 			</div>
 			<pre id="result" class="col-md-4" ng-bind-html="result" />     
 		</div>
-		<div class="row">
+		<div class="row" ng-show="isAllow()">
 			Quantidade: {{countKeys}}
 		</div>
 	</body>

@@ -1,11 +1,15 @@
 var app = angular.module("appX", ['ngSanitize']);
 app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   
+  $scope.origem = 0;
+
   $scope.init = function() {
     this.apiKey = localStorage.getItem('ApiKey');
-    this.countKeys = 0;
-    this.comando = 0;
-    $scope.countGameKeys();
+    if (this.apiKey) {
+      this.countKeys = 0;
+      this.comando = 0;
+      $scope.countGameKeys();
+    }
   }
 
   $scope.parse = function() {
@@ -45,6 +49,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       case 11:
         $scope.generateReedemCode();
         this.comando = 11;
+        break;
+      case 12:
+        $scope.findKeysDB();
+        this.comando = 12;
       break;
     }
   }
@@ -242,12 +250,6 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let range; 
     let selection;
     
-    selection = window.getSelection();
-    range = document.createRange();
-    range.selectNodeContents(target);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    /*
     if (document.body.createTextRange) {
       range = document.body.createTextRange();
       range.moveToElementText(target);
@@ -259,7 +261,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       selection.removeAllRanges();
       selection.addRange(range);
     }
-    */
+    
     try {
       var successful = document.execCommand('copy');
       var msg = successful ? 'successful' : 'unsuccessful';
@@ -341,6 +343,17 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     return this.insert(arrResult,'gameskeys');
   }
 
+  $scope.getDate = function() {
+    let date = new Date();
+    return date.getDate() + '/' + date.getMonth() + '/' + date.getFullYear() +
+     ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+  }
+
+  $scope.addShowListDB = function(list) {
+    let showList = {date:$scope.getDate(),keys:list};
+    return this.insert(showList,'showlist');
+  }
+
   $scope.findGamesKeysDB = function() {
     let arr =  $scope.keystext.split('\n');
     let promises = [];
@@ -348,6 +361,18 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     for (let i in arr) {
       let linha = arr[i].trim();
       promises.push($scope.getGameKeysDB({description:linha, active:true}));
+    }
+
+    $scope.executeFindKeysPromisse(promises);
+  }
+
+  $scope.findKeysDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+
+    for (let i in arr) {
+      let linha = arr[i].trim();
+      promises.push($scope.getGameKeysDB({key:linha, active:true}));
     }
 
     $scope.executeFindKeysPromisse(promises);
@@ -362,6 +387,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         return item.data[0].description + '  ' + item.data[0].key;
       }); 
       
+      if (arrResult && arrResult.length > 0) {
+        $scope.addShowListDB(arrResult);
+      }
+
       this.result = '';
       for (let i in arrResult) {
         if (arrResult[i]) {
@@ -513,6 +542,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
     let reedemcode = {
       code:code,
+      date:$scope.getDate(),
       keys:arrKeys
     };
     this.insert(reedemcode,'reedemcodes').then((data)=> this.result = code, (data)=> this.result = "error:" + data);
@@ -533,6 +563,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
 
     return code;
+  }
+  
+  $scope.isAllow = function() {
+    return localStorage.getItem('ApiKey');
   }
 
 });
