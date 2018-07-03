@@ -6,7 +6,7 @@
 	 <link href=bootstrap.min.css rel=stylesheet></link>
 	</head>
 	<body ng-app="appX"  ng-controller="appCtrl" ng-init="init()">
-		<div class="row" ng-if="apiKey">
+		<div class="row">
 			<div class="col-md-4">
 				<textarea cols="70" rows="30" ng-model="keystext"></textarea>
 			</div>
@@ -32,7 +32,7 @@
 			</div>
 			<pre id="result" class="col-md-4" ng-bind-html="result" />     
 		</div>
-		<div class="row" ng-if="apiKey">
+		<div class="row">
 			Quantidade: {{countKeys}}
 		</div>
 	</body>
