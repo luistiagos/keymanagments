@@ -280,6 +280,22 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     );
   }
 
+  $scope.populaGameInfo = function(product, currency) {
+
+    let urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency ;
+
+    $http({ method: 'GET',  url: urlInfo}).then(
+      (info) => {
+         console.log(info);
+         let data = info.data[product.appId].data;
+         let price = data.price_overview;
+         product.prices.push({currency:price.currency, value:price.initial});
+         product.metacritic = (data.metacritic)?data.metacritic.score:undefined; 
+      }
+    );
+    
+  }
+
   $scope.addGamesDB = function() {
     let arr =  $scope.keystext.split('\n');
     let arrResult = [];
@@ -290,7 +306,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       let linha = arr[i];
       let id = linha.substr(0,linha.search(/\s/g)).trim();
       let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
-      arrResult.push({appId:id, description:desc});
+      let product = {appId:id, description:desc, prices:[], metacritic:undefined};
+      $scope.populaGameInfo(product, 'BRL');
+      $scope.populaGameInfo(product, 'USD');
+      arrResult.push(product);
     }
 
     this.insert(arrResult,'games').then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
@@ -335,8 +354,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         appId:undefined, 
         description:desc, 
         key:key,
-        priceRS:undefined,
-        priceUS:undefined, 
+        prices:[], 
         active:true});
     }
 
