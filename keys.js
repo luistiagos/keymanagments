@@ -280,39 +280,63 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     );
   }
 
-  $scope.populaGameInfo = function(product, currency) {
+  $scope.populaGameInfo = function(product) {
 
-    let urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency ;
+    let deferred = $q.defer();
 
+    let currency = 'USD';
+    let urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency;
+
+    
     $http({ method: 'GET',  url: urlInfo}).then(
       (info) => {
-         console.log(info);
          let data = info.data[product.appId].data;
-         let price = data.price_overview;
-         product.prices.push({currency:price.currency, value:price.initial});
-         product.metacritic = (data.metacritic)?data.metacritic.score:undefined; 
+         product.priceUSD = data.price_overview.initial;
+         product.metacritic = (data.metacritic)?data.metacritic.score:undefined;
+         
+         currency = 'BRL';
+         urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency;
+
+         $http({ method: 'GET',  url: urlInfo}).then(
+          (info) => {
+             let data = info.data[product.appId].data;
+             product.priceBRL = data.price_overview.initial;
+             deferred.resolve(product);
+          },
+          (error) => {
+             deferred.reject(error);
+          }
+        );
+      },
+      (error) => {
+         deferred.reject(error);
       }
     );
-    
+
+    return deferred.promise;
   }
 
   $scope.addGamesDB = function() {
-    let arr =  $scope.keystext.split('\n');
-    let arrResult = [];
-    let arrDesc = [];    
-    let ret = [];
+    let arr =  $scope.keystext.split('\n');  
+    let promises = [];
 
     for (let i in arr) {
       let linha = arr[i];
       let id = linha.substr(0,linha.search(/\s/g)).trim();
       let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
-      let product = {appId:id, description:desc, prices:[], metacritic:undefined};
-      $scope.populaGameInfo(product, 'BRL');
-      $scope.populaGameInfo(product, 'USD');
-      arrResult.push(product);
+      let product = {appId:id, description:desc, priceBRL:undefined, priceUSD:undefined, 
+        metacritic:undefined};
+      promises.push($scope.populaGameInfo(product));
     }
 
-    this.insert(arrResult,'games').then((data)=> this.result = 'Insert Suceffull', (data)=> this.result = "error:" + data);
+    $q.all(promises).then((products) => {
+      this.insert(products,'games').then(
+        (data)=> {
+          this.result = 'Insert Suceffull ' + data.data.n + ' inserted';
+          this.keystext = '';
+        }, 
+        (data)=> this.result = "error:" + data);
+    });
   }
 
   $scope.insert = function(games, dbname) {
