@@ -58,7 +58,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   }
 
   $scope.habilitaDeleteKeys = function() {
-    return this.comando == 9 || this.comando == 10; 
+    return this.comando == 9 || this.comando == 10 || this.comando == 12; 
   }
 
   $scope.keysRepeats = function() {
@@ -374,10 +374,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
      $scope.getGameTitleDB({description:productKey.description})
       .then((item)=>{
-          productKey.appId = item.data[0].appId;
-          productKey.priceBRL = item.data[0].priceBRL;
-          productKey.priceUSD = item.data[0].priceUSD;
-          productKey.metacritic = item.data[0].metacritic;
+          if (item && item.data && item.data[0]){
+            productKey.appId = item.data[0].appId;
+            productKey.priceBRL = item.data[0].priceBRL;
+            productKey.priceUSD = item.data[0].priceUSD;
+            productKey.metacritic = item.data[0].metacritic;
+          }
           deferred.resolve(productKey);
       }, (error) => {
         deferred.reject(error);
