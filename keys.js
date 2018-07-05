@@ -284,13 +284,13 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
     let deferred = $q.defer();
 
-    let currency = 'USD';
+    let currency = 'US';
     let urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency;
-
     
     $http({ method: 'GET',  url: urlInfo}).then(
       (info) => {
          let data = info.data[product.appId].data;
+         product.description = data.name;
          product.priceUSD = data.price_overview.initial;
          product.metacritic = (data.metacritic)?data.metacritic.score:undefined;
          
@@ -322,10 +322,14 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
     for (let i in arr) {
       let linha = arr[i];
-      let id = linha.substr(0,linha.search(/\s/g)).trim();
-      let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
-      let product = {appId:id, description:desc, priceBRL:undefined, priceUSD:undefined, 
+      let id = linha.trim();
+      //let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
+      let product = {appId:id, 
+        description:undefined, 
+        priceBRL:undefined, 
+        priceUSD:undefined, 
         metacritic:undefined};
+      
       promises.push($scope.populaGameInfo(product));
     }
 
@@ -365,24 +369,57 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     );
   }
 
+  $scope.populaGamesKeys = function(productKey) {
+     let deferred = $q.defer();
+
+     $scope.getGameTitleDB({description:productKey.description})
+      .then((item)=>{
+          productKey.appId = item.data[0].appId;
+          productKey.priceBRL = item.data[0].priceBRL;
+          productKey.priceUSD = item.data[0].priceUSD;
+          productKey.metacritic = item.data[0].metacritic;
+          deferred.resolve(productKey);
+      }, (error) => {
+        deferred.reject(error);
+      }); 
+
+      return deferred.promise;
+  }
+
   $scope.addGamesKeysDB = function() {
+    let deferred = $q.defer();
     let arr =  $scope.keystext.split('\n');
-    let arrResult = [];
+    let promisses = [];
 
     for (let i in arr) {
       let linha = arr[i];
       let regex = linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)
       let desc = linha.substr(0,regex).trim();
       let key = linha.substr(regex).trim();
-      arrResult.push({
+
+      let productKey = {
         appId:undefined, 
         description:desc, 
         key:key,
-        prices:[], 
-        active:true});
+        priceBRL:undefined,
+        priceUSD:undefined, 
+        active:true} 
+
+      promisses.push($scope.populaGamesKeys(productKey)); 
     }
 
-    return this.insert(arrResult,'gameskeys');
+     $q.all(promisses).then((values) => {
+        this.insert(values,'gameskeys').then(
+          (data) => {
+            deferred.resolve(data);
+          },
+          (error) => {
+            deferred.reject(error);
+          }
+        );
+     });
+
+    return deferred.promise;
   }
 
   $scope.getDate = function() {
@@ -467,9 +504,24 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
 
   $scope.getGameKeysDB = function(params, limit) {
-    
     let strparams = JSON.stringify(params);
     let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?q='+strparams;
+    if (limit && limit > 0) {
+      query += 'l=' + limit;
+    }
+    
+    query += '&apiKey=' + this.apiKey;
+    console.log(query);
+    
+    return $http({
+      method: 'GET',
+      url: query
+    });
+  }
+
+   $scope.getGameTitleDB = function(params, limit) {
+    let strparams = JSON.stringify(params);
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?q='+strparams;
     if (limit && limit > 0) {
       query += 'l=' + limit;
     }
