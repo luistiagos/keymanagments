@@ -291,7 +291,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       (info) => {
          let data = info.data[product.appId].data;
          product.description = data.name;
-         product.priceUSD = data.price_overview.initial;
+         product.priceUSD = (data.price_overview)?data.price_overview.initial:undefined;
          product.metacritic = (data.metacritic)?data.metacritic.score:undefined;
          
          currency = 'BRL';
@@ -300,7 +300,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
          $http({ method: 'GET',  url: urlInfo}).then(
           (info) => {
              let data = info.data[product.appId].data;
-             product.priceBRL = data.price_overview.initial;
+             product.priceBRL = (data.price_overview)?data.price_overview.initial:undefined;
              deferred.resolve(product);
           },
           (error) => {
