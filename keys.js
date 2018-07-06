@@ -9,7 +9,9 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       this.countKeys = 0;
       this.comando = 0;
       $scope.countGameKeys();
-      $scope.loadGames();
+       if (!localStorage.getItem('gamesmap')) {
+         $scope.loadGames();
+       }
     }
   }
 
@@ -63,7 +65,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   }
 
   $scope.habilitaDeleteKeys = function() {
-    return this.comando == 9 || this.comando == 10 || this.comando == 12; 
+    return this.comando == 9 || this.comando == 10 || this.comando == 12 ||
+    this.comando == 13;
   }
 
   $scope.keysRepeats = function() {
@@ -555,13 +558,14 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   }
 
   $scope.loadGames = function() {
-    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games&apiKey=' + this.apiKey;
+
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?apiKey=' + this.apiKey;
     
     $http({method: 'GET', url: query}).then(
       (values) => {
         let gamesmap = [];
         for (let index in values) {
-          let obj = values[index].data[0];
+          let obj = values[index];
           gamesmap[obj.description] = obj;
         }
         $scope.setObjLocal('gamesmap',gamesmap);
