@@ -59,7 +59,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         break;
       case 13:
         $scope.listGreaterThanRandomGamesKeysDB();
-        this.commando = 13;
+        this.comando = 13;
         break;
     }
   }
