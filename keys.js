@@ -9,6 +9,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       this.countKeys = 0;
       this.comando = 0;
       $scope.countGameKeys();
+      $scope.loadGames();
     }
   }
 
@@ -545,6 +546,28 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     );
   }
 
+  $scope.setObjLocal = function(key, obj) {
+    localStorage.setItem(key,JSON.stringify(obj));
+  }
+
+  $scope.getObjLocal = function(key) {
+    return JSON.parse(localStorage.getItem(key));
+  }
+
+  $scope.loadGames = function() {
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games&apiKey=' + this.apiKey;
+    
+    $http({method: 'GET', url: query}).then(
+      (values) => {
+        let gamesmap = [];
+        for (let index in values) {
+          let obj = values[index].data[0];
+          gamesmap[obj.description] = obj;
+        }
+        $scope.setObjLocal('gamesmap',gamesmap);
+      } 
+    );
+  }
 
   $scope.getGameKeysDB = function(params, limit) {
     let strparams = JSON.stringify(params);
@@ -688,6 +711,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     this.insert(reedemcode,'reedemcodes')
       .then((data)=> {
         this.result = code;
+
+        /*
         let promises = [];  
 
         for (let i in this.keysToDesactivate) {
@@ -702,7 +727,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
           }
           alert(count + ' Removidas');
         });
-
+        */
       }, (data)=> this.result = "error:" + data);
   }
 
