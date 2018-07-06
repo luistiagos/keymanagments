@@ -53,7 +53,11 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       case 12:
         $scope.findKeysDB();
         this.comando = 12;
-      break;
+        break;
+      case 13:
+        $scope.listGreaterThanRandomGamesKeysDB();
+        this.commando = 13;
+        break;
     }
   }
 
@@ -504,6 +508,43 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     );
   }
 
+  $scope.listGreaterThanRandomGamesKeysDB = function() {
+    let arr = $scope.keystext.trim().split(':');
+    let currency = arr[0].trim().toUpperCase();
+    let quantidade = parseInt(arr[1].trim());
+    let price = parseInt(arr[2].trim());
+    let query = undefined;
+    if (currency == 'BRL') {
+      query = { priceBRL: { $gt: price }, active:true };
+    }
+    else if(currency == 'USD') {
+      query = { priceUSD: { $gt: price }, active:true };
+    }
+    else {
+      return;
+    }
+
+    let promises = [];
+    
+    $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', query)
+      .then((res)=>{
+        console.log(res);
+        let arrResult = res.data.values;
+        console.log(arrResult);
+
+        arrResult = $scope.shuffle(arrResult);
+        let max = (quantidade > arrResult.length)?arrResult.length:quantidade;
+
+        for (let i = 0;i < max; i++) {
+          let description = arrResult[i].trim();
+          promises.push($scope.getGameKeysDB({description:description, active:true}));
+        }
+
+        $scope.executeFindKeysPromisse(promises);
+      }
+    );
+  }
+
 
   $scope.getGameKeysDB = function(params, limit) {
     let strparams = JSON.stringify(params);
@@ -588,6 +629,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
 
     let array = this.result.split(/\r|\n/);
+    
     let promises = [];
 
     for (index in array) {
@@ -605,7 +647,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         count += (values[index].status == 200)?1:0;
       }
       alert(count + ' Removidas');
-   }); 
+    }); 
   }
 
   $scope.desativarKey = function(key) {
@@ -625,13 +667,15 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.generateReedemCode = function() {
     let arr =  $scope.keystext.split('\n');
     let arrKeys = [];
+    let keysToDesactivate = [];
 
     for (let i in arr) {
       let linha = arr[i];
       let regex = linha.search(/[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}/g)
       let desc = linha.substr(0,regex).trim();
       let key = linha.substr(regex).trim();
-      arrKeys.push(desc + '   ' + key); 
+      arrKeys.push(desc + '   ' + key);
+      keysToDesactivate.push(key); 
     }
 
     let code = this.createReedemCode();
@@ -641,7 +685,25 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       date:$scope.getDate(),
       keys:arrKeys
     };
-    this.insert(reedemcode,'reedemcodes').then((data)=> this.result = code, (data)=> this.result = "error:" + data);
+    this.insert(reedemcode,'reedemcodes')
+      .then((data)=> {
+        this.result = code;
+        let promises = [];  
+
+        for (let i in this.keysToDesactivate) {
+          let key = this.keysToDesactivate[i];
+          promises.push($scope.desativarKey(key));
+        }
+
+        $q.all(promises).then((values) => {
+          let count = 0;
+          for (index in values) {
+            count += (values[index].status == 200)?1:0;
+          }
+          alert(count + ' Removidas');
+        });
+
+      }, (data)=> this.result = "error:" + data);
   }
 
 
