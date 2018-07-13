@@ -59,6 +59,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         $scope.listGreaterThanRandomGamesKeysDB();
         this.commando = 13;
         break;
+      case 14:
+        $scope.findGamesKeysNotContainDB();
+        this.commando = 14;
+        break;
     }
   }
 
@@ -452,6 +456,40 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     $scope.executeFindKeysPromisse(promises);
   }
 
+  $scope.findGamesKeysNotContainDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+    let descriptions = [];
+
+    for (let i in arr) {
+      let linha = arr[i].trim();
+      descriptions.push(linha);
+    }
+
+    let query =  {description: { $exists: true, $nin: descriptions }, active:true};
+
+    $scope.getGameKeysDB(query).then(
+      (item) => {
+
+        let arrResult = [];
+        for (let i in item.data) {
+          arrResult.push(item.data[i].description + '  ' + item.data[i].key);
+        }
+        
+        if (arrResult && arrResult.length > 0) {
+          $scope.addShowListDB(arrResult);
+        }
+  
+        this.result = '';
+        for (let i in arrResult) {
+          if (arrResult[i]) {
+            this.result += arrResult[i] + "\n";
+          }
+        }
+      }
+    );
+  }
+
   $scope.findKeysDB = function() {
     let arr =  $scope.keystext.split('\n');
     let promises = [];
@@ -711,23 +749,6 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     this.insert(reedemcode,'reedemcodes')
       .then((data)=> {
         this.result = code;
-
-        /*
-        let promises = [];  
-
-        for (let i in this.keysToDesactivate) {
-          let key = this.keysToDesactivate[i];
-          promises.push($scope.desativarKey(key));
-        }
-
-        $q.all(promises).then((values) => {
-          let count = 0;
-          for (index in values) {
-            count += (values[index].status == 200)?1:0;
-          }
-          alert(count + ' Removidas');
-        });
-        */
       }, (data)=> this.result = "error:" + data);
   }
 
