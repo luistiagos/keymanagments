@@ -533,9 +533,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     
     $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', {active:true})
       .then((res)=>{
-        console.log(res);
+        console.log('res',res);
         let arrResult = res.data.values;
-        console.log(arrResult);
 
         arrResult = $scope.shuffle(arrResult);
         let max = (quantidade > arrResult.length)?arrResult.length:quantidade;
@@ -546,6 +545,9 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         }
 
         $scope.executeFindKeysPromisse(promises);
+      },
+      (error) => {
+        console.log('error',error);
       }
     );
   }
@@ -596,7 +598,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   }
 
   $scope.loadGames = function() {
-
+    console.log('load');
     let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?apiKey=' + this.apiKey;
     
     $http({method: 'GET', url: query}).then(
@@ -665,9 +667,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       method: 'POST',
       url: url,
       headers: {
-        'Content-Type': "application/json"
+        'Content-Type': "application/json;charset=utf-8"
       },
-      data: command
+      data: command,
+      transformResponse:(data)=>{
+        return (data)?JSON.parse(data.replace('<','"').replace('>','"')):data;
+      }
      }
 
      return $http(req);
