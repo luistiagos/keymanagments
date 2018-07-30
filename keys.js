@@ -76,7 +76,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
   $scope.habilitaDeleteKeys = function() {
     return this.comando == 9 || this.comando == 10 || this.comando == 12 ||
-    this.comando == 13;
+    this.comando == 13 ||  this.commando == 14;
   }
 
   $scope.keysRepeats = function() {
