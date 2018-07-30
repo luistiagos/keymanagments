@@ -7,8 +7,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     this.apiKey = localStorage.getItem('ApiKey');
     if (this.apiKey) {
       this.countKeys = 0;
+      this.countDiffKeys = 0;
       this.comando = 0;
       $scope.countGameKeys();
+      $scope.countDiffGameKeys();
        if (!localStorage.getItem('gamesmap')) {
          $scope.loadGames();
        }
@@ -62,8 +64,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         this.comando = 13;
         break;
       case 14:
-        $scope.findGamesKeysNotContainDB();
+        $scope.listRandomGamesKeysNotContainDB();
         this.commando = 14;
+        break;
+      case 15:
+        $scope.generateConfirmText();
+        this.comando = 15;
         break;
     }
   }
@@ -127,7 +133,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     var arr =  $scope.keystext.split('\n');
     arr =  $scope._removeKeys(arr);
     for (var i in arr) {
-      arrResult.push("- " + arr[i]);
+      arrResult.push(arr[i]);
     }
    $scope.result = $sanitize(arrResult.join('\n'));
   }
@@ -288,6 +294,21 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       (data) => {
         console.log(data.data);
         this.countKeys = data.data;
+      }
+    );
+  }
+
+  $scope.countDiffGameKeys = function() {
+  
+    let query =  {description: { $exists: true}, active:true};
+
+    $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', query)
+      .then((res)=>{
+        console.log('res',res);
+        this.countDiffKeys = res.data.values.length;
+      },
+      (error) => {
+        console.log('error',error);
       }
     );
   }
@@ -470,7 +491,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
 
     let query =  {description: { $exists: true, $nin: descriptions }, active:true};
-
+    
     $scope.getGameKeysDB(query).then(
       (item) => {
 
@@ -532,6 +553,45 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let promises = [];
     
     $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', {active:true})
+      .then((res)=>{
+        console.log('res',res);
+        let arrResult = res.data.values;
+
+        arrResult = $scope.shuffle(arrResult);
+        let max = (quantidade > arrResult.length)?arrResult.length:quantidade;
+
+        for (let i = 0;i < max; i++) {
+          let description = arrResult[i].trim();
+          promises.push($scope.getGameKeysDB({description:description, active:true}));
+        }
+
+        $scope.executeFindKeysPromisse(promises);
+      },
+      (error) => {
+        console.log('error',error);
+      }
+    );
+  }
+
+  $scope.listRandomGamesKeysNotContainDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+    let descriptions = [];
+    let quantidade = 0;
+
+    for (let i in arr) {
+      let linha = arr[i].trim();
+      if (i == 0) {
+        quantidade = parseInt(linha);
+      }
+      else {
+        descriptions.push(linha);
+      }
+    }
+
+    let query =  {description: { $exists: true, $nin: descriptions }, active:true};
+
+    $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', query)
       .then((res)=>{
         console.log('res',res);
         let arrResult = res.data.values;
@@ -732,6 +792,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
      }
 
      return $http(req);
+  }
+
+  $scope.generateConfirmText = function() {
+    this.result = 'To recive your keys.\n' + 
+    'Go on your paypal registered email account\nand send email to: tiago.hablich@gmail.com' +
+    '\nWith text: I confirm the order. \n\nThanks.';
   }
 
   $scope.generateReedemCode = function() {

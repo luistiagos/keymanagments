@@ -26,6 +26,7 @@
 					<option value="13">Listar Random Games(Maior que)</option>
 					<option value="14">Listar Random Games Not Contains</option>
 					<option value="11">Gerar Reedem Code</option>
+					<option value="15">Gerar Texto Confirmação eBay</option>
 				</select>
 				<input type="checkbox" ng-show="origem == 1" ng-model="withkeys">With Keys</input>
 				<br>
@@ -37,6 +38,7 @@
 		</div>
 		<div class="row" ng-show="isAllow()">
 			Quantidade: {{countKeys}}
+			Distintos: {{countDiffKeys}}
 		</div>
 	</body>
 </html>
