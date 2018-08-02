@@ -71,6 +71,10 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         $scope.generateConfirmText();
         this.comando = 15;
         break;
+      case 16:
+        $scope.listGamesDB();
+        this.comando = 16;
+        break;
     }
   }
 
@@ -548,6 +552,101 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     });
   }
 
+  $scope.toPrice = (price) => {
+    if (!price) {
+      return undefined;
+    }
+    
+    value = ''+price;
+
+    if (value.length == 2) {
+      return '0.'+value;
+    }
+
+    return value.substring(0,value.length - 2) + '.' + value.substring(value.length - 2);
+  }
+
+  $scope.listGamesDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+    let descriptions = [];
+
+    let command = arr[0].trim().split(':');
+    let order = command[0].trim().toUpperCase();
+    let direction = command[1].trim().toUpperCase();
+    let quantidade = parseInt(command[2].trim());
+  
+    for (let i in arr) {
+      let linha = arr[i].trim();
+      if (i > 0) {
+        descriptions.push(linha);
+      }
+    }
+
+    let query =  (descriptions.length > 0)?{description: { $exists: true, $in: descriptions }}:undefined;
+    
+    $scope.listDistinctDB('randomkeysbox', 'games', 'description', query)
+      .then((res)=>{
+        console.log('res',res);
+        let arrResult = res.data.values;
+        descriptions = [];
+
+        for (let i = 0;i < arrResult.length; i++) {
+          let description = arrResult[i].trim();
+          descriptions.push(description);
+        }
+
+        $scope.getGameDB({description: { $exists: true, $in: descriptions }}).then((resp) => {
+
+          let values = resp.data;
+
+          values.sort((a, b) => {
+            if (!a || !b) {
+              return undefined;
+            }
+            let orderField = 'price' + order;
+            return (direction == 'ASC')? a[orderField] - b[orderField]:
+            b[orderField] - a[orderField];
+          });
+
+          if (quantidade && quantidade < values.length) {
+            values = values.slice(0,quantidade);
+          }
+
+          let arrResult = values.map((item)=>{
+            if (!item) {
+              return undefined;
+            }
+
+            return item.description + '  BRL:' + $scope.toPrice(item.priceBRL) + 
+              ' USD:' + $scope.toPrice(item.priceUSD);
+          }); 
+          
+          this.result = '';
+
+          let priceBRL = values.map((v) => parseInt(v.priceBRL)).reduce((acc,v)=>{
+            return acc + v;
+          });
+
+          let priceUSD = values.map((v) => parseInt(v.priceUSD)).reduce((acc,v)=>{
+            return acc + v;
+          });
+
+          this.result += 'Total (BRL:' + $scope.toPrice(priceBRL) + ' USD:' + $scope.toPrice(priceUSD) + ')\n';
+
+          for (let i in arrResult) {
+            if (arrResult[i]) {
+              this.result += arrResult[i] + "\n";
+            }
+          }
+        });
+      },
+      (error) => {
+        console.log('error',error);
+      }
+    );
+  }
+
   $scope.listRandomGamesKeysDB = function() {
     let quantidade =  parseInt($scope.keystext.trim());
     let promises = [];
@@ -689,6 +788,22 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     });
   }
 
+  $scope.getGameDB = function(params, limit) {
+    let strparams = JSON.stringify(params);
+    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?q='+strparams;
+    if (limit && limit > 0) {
+      query += 'l=' + limit;
+    }
+    
+    query += '&apiKey=' + this.apiKey;
+    console.log(query);
+    
+    return $http({
+      method: 'GET',
+      url: query
+    });
+  }
+
    $scope.getGameTitleDB = function(params, limit) {
     let strparams = JSON.stringify(params);
     let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?q='+strparams;
@@ -719,7 +834,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.listDistinctDB = function(dbname, colldistinct, fieldDistinct, params) {
 
     let command = JSON.stringify( {"distinct": colldistinct,"key": fieldDistinct,"query": params} );
-    let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?apiKey=' + this.apiKey;
+    let url = 'https://api.mlab.com/api/1/databases/'+dbname+'/runCommand?&apiKey=' + this.apiKey;
     console.log(url);
     console.log(command);
 
@@ -797,7 +912,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.generateConfirmText = function() {
     this.result = 'To recive your keys.\n' + 
     'Go on your paypal registered email account\nand send email to: tiago.hablich@gmail.com' +
-    '\nWith text: I confirm the order. \n\nThanks.';
+    '\nWith text: I confirm the order. \n\n' + 
+    '\n'
   }
 
   $scope.generateReedemCode = function() {
