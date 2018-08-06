@@ -551,10 +551,9 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     for (let i in arr) {
       let linha = arr[i].trim();
       keys.push(linha);
+      let query =  {key: linha, active:true};
+      promises.push($scope.getGameKeysDB(query));
     }
-
-    let query =  {key: { $exists: true, $in: keys }, active:true};
-    promises.push($scope.getGameKeysDB(query));
 
     $scope.executeFindKeysPromisse(promises);
   }
@@ -932,7 +931,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.desativarKey = function(key) {
     let url = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?apiKey=' + this.apiKey + '&q={"key":"'+key+'"}';
     let req = {
-      method: 'DELETE',
+      method: 'PUT',
       url: url,
       headers: {
         'Content-Type': "application/json"
