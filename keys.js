@@ -360,7 +360,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     for (let i in arr) {
       let linha = arr[i];
       let id = linha.trim();
-      //let desc = linha.substr(linha.search(/[a-zA-Z]/g)).trim();
+      
       let product = {appId:id, 
         description:undefined, 
         priceBRL:undefined, 
@@ -387,7 +387,11 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       headers: {
         'Content-Type': "application/json"
       },
-      data: JSON.stringify(games)
+      data: JSON.stringify(games),
+      transformResponse:(data)=>{
+        console.log(data);
+        return data;
+      }
      }
 
      return $http(req);
@@ -429,6 +433,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let deferred = $q.defer();
     let arr =  $scope.keystext.split('\n');
     let promisses = [];
+    let products = [];
+    let keys = [];
 
     for (let i in arr) {
       let linha = arr[i];
@@ -443,20 +449,38 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         priceBRL:undefined,
         priceUSD:undefined, 
         active:true} 
-
-      promisses.push($scope.populaGamesKeys(productKey)); 
+      
+      keys.push(key);
+      products.push(productKey); 
     }
 
-     $q.all(promisses).then((values) => {
-        this.insert(values,'gameskeys').then(
-          (data) => {
-            deferred.resolve(data);
-          },
-          (error) => {
-            deferred.reject(error);
-          }
-        );
-     });
+    $scope.existKeysDB(keys).then((resp)=>{
+      let values = resp.data;
+      if (values && values.length > 0) {
+        let msg = '\nKeys ja existentes:\n';
+        for (let v in values) {
+          msg += values[v].key + '\n'
+        }
+        this.result = msg;
+        deferred.reject(msg);
+      }
+      else {
+        for (let i in products) {
+          let prod = products[i];
+          promisses.push($scope.populaGamesKeys(prod)); 
+        }
+        $q.all(promisses).then((values) => {
+          this.insert(values,'gameskeys').then(
+            (data) => {
+              deferred.resolve(data);
+            },
+            (error) => {
+              deferred.reject(error);
+            }
+          );
+       });
+      }
+    });
 
     return deferred.promise;
   }
@@ -521,13 +545,22 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.findKeysDB = function() {
     let arr =  $scope.keystext.split('\n');
     let promises = [];
+    let keys = [];
 
     for (let i in arr) {
       let linha = arr[i].trim();
-      promises.push($scope.getGameKeysDB({key:linha, active:true}));
+      keys.push(linha);
     }
 
+    let query =  {key: { $exists: true, $in: keys }, active:true};
+    promises.push($scope.getGameKeysDB(query));
+
     $scope.executeFindKeysPromisse(promises);
+  }
+
+  $scope.existKeysDB = function(keys) {
+    let query =  {key: { $exists: true, $in: keys }};
+    return $scope.getGameKeysDB(query);
   }
 
   $scope.executeFindKeysPromisse = function(promises) {
@@ -898,7 +931,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.desativarKey = function(key) {
     let url = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/gameskeys?apiKey=' + this.apiKey + '&q={"key":"'+key+'"}';
     let req = {
-      method: 'PUT',
+      method: 'DELETE',
       url: url,
       headers: {
         'Content-Type': "application/json"
