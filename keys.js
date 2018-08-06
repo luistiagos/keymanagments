@@ -400,7 +400,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   $scope.addGamesKeys = function() {
     $scope.addGamesKeysDB().then(
       (data)=> {
-        this.result = 'Insert Suceffull ' + data.data.n + ' inserted';
+        let qtd = JSON.parse(data.data);
+        this.result = 'Insert Suceffull ' + qtd.n + ' inserted';
         this.keystext = '';
         $scope.countGameKeys();
       }, 
