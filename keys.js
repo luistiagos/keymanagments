@@ -9,12 +9,13 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       this.countKeys = 0;
       this.countDiffKeys = 0;
       this.comando = 0;
-      $scope.countGameKeys();
-      $scope.countDiffGameKeys();
-       if (!localStorage.getItem('gamesmap')) {
-         $scope.loadGames();
-       }
+      $scope.updateCounters();
     }
+  }
+
+  $scope.updateCounters = function() {
+    $scope.countGameKeys();
+    $scope.countDiffGameKeys();
   }
 
   $scope.parse = function() {
@@ -72,8 +73,12 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         this.comando = 15;
         break;
       case 16:
-        $scope.listGamesDB();
+        $scope.listCatalogosDB();
         this.comando = 16;
+        break;
+      case 17:
+        $scope.findGamesPricesDB();
+        this.comando = 17;
         break;
     }
   }
@@ -403,7 +408,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         let qtd = JSON.parse(data.data);
         this.result = 'Insert Suceffull ' + qtd.n + ' inserted';
         this.keystext = '';
-        $scope.countGameKeys();
+        $scope.updateCounters();
       }, 
       (error)=> {
         this.result = "error:" + error;
@@ -509,6 +514,57 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     $scope.executeFindKeysPromisse(promises);
   }
 
+  $scope.findGamesPricesDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+
+    let currency = arr[0].trim().toUpperCase();
+
+    for (let i = 1;i < arr.length; i++) {
+      let linha = arr[i].trim();
+      promises.push($scope.getGameKeysDB({description:linha, active:true}));
+    }
+
+    $q.all(promises).then((values) => {
+      let total = 0;
+      
+      let productWithoutPrices = values.filter(item => (item && item.data && item.data[0] && 
+        (!item.data[0].priceUSD || !item.data[0].priceBRL)))
+      .map(item => item.data[0].description);
+
+      let products = values.filter(item => (item && item.data && item.data[0] && 
+        item.data[0].priceUSD && item.data[0].priceBRL))
+      .sort((a,b) => {return b.data[0]['price'+currency] - a.data[0]['price'+currency]})
+      .map((item)=>{
+        let product = item.data[0];
+        let price = product['price'+currency];
+        total += (!price)?0:price;
+        let priceFormated = '';
+
+        if (price) {
+           priceFormated = $scope.toPrice(price);
+        }
+
+        return product.description + ' (' + priceFormated + ')';
+      }); 
+
+      this.result = 'Total: ' + currency + ': ' + $scope.toPrice(total) + '\n';
+      for (let i in products) {
+        if (products[i]) {
+          this.result += products[i] + "\n";
+        }
+      }
+
+      this.result += '\nNão Precificados: \n';
+      for (let i in productWithoutPrices) {
+        if (productWithoutPrices[i]) {
+          this.result += productWithoutPrices[i] + "\n";
+        }
+      }
+
+    });
+  }
+
   $scope.findGamesKeysNotContainDB = function() {
     let arr =  $scope.keystext.split('\n');
     let promises = [];
@@ -599,9 +655,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     return value.substring(0,value.length - 2) + '.' + value.substring(value.length - 2);
   }
 
-  $scope.listGamesDB = function() {
+  $scope.listCatalogosDB = function() {
     let arr =  $scope.keystext.split('\n');
-    let promises = [];
     let descriptions = [];
 
     let command = arr[0].trim().split(':');
@@ -622,56 +677,57 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       .then((res)=>{
         console.log('res',res);
         let arrResult = res.data.values;
-        descriptions = [];
+        let promisses = [];
 
         for (let i = 0;i < arrResult.length; i++) {
-          let description = arrResult[i].trim();
-          descriptions.push(description);
+          promisses.push($scope.getGameDB({description:arrResult[i].trim()}));
         }
 
-        $scope.getGameDB({description: { $exists: true, $in: descriptions }}).then((resp) => {
-
-          let values = resp.data;
-
-          values.sort((a, b) => {
+        $q.all(promisses).then((resp) => {
+          let valuesData = resp.map((item)=>{
+            return item.data[0];
+          });
+          
+          valuesData.sort((a, b) => {
             if (!a || !b) {
               return undefined;
             }
+            
             let orderField = 'price' + order;
             return (direction == 'ASC')? a[orderField] - b[orderField]:
-            b[orderField] - a[orderField];
-          });
-
-          if (quantidade && quantidade < values.length) {
-            values = values.slice(0,quantidade);
-          }
-
-          let arrResult = values.map((item)=>{
-            if (!item) {
-              return undefined;
-            }
-
-            return item.description + '  BRL:' + $scope.toPrice(item.priceBRL) + 
-              ' USD:' + $scope.toPrice(item.priceUSD);
-          }); 
+              b[orderField] - a[orderField];
+            });
           
-          this.result = '';
-
-          let priceBRL = values.map((v) => parseInt(v.priceBRL)).reduce((acc,v)=>{
-            return acc + v;
-          });
-
-          let priceUSD = values.map((v) => parseInt(v.priceUSD)).reduce((acc,v)=>{
-            return acc + v;
-          });
-
-          this.result += 'Total (BRL:' + $scope.toPrice(priceBRL) + ' USD:' + $scope.toPrice(priceUSD) + ')\n';
-
-          for (let i in arrResult) {
-            if (arrResult[i]) {
-              this.result += arrResult[i] + "\n";
+            if (quantidade && quantidade < valuesData.length) {
+              valuesData = valuesData.slice(0,quantidade);
             }
-          }
+          
+            let arrResult = valuesData.map((item)=>{
+              if (!item) {
+                return undefined;
+              }
+          
+              return item.description + '  BRL:' + $scope.toPrice(item.priceBRL) + 
+                ' USD:' + $scope.toPrice(item.priceUSD);
+            }); 
+                    
+            this.result = '';
+          
+            let priceBRL = valuesData.map((v) => parseInt(v.priceBRL)).reduce((acc,v)=>{
+              return acc + v;
+            });
+          
+            let priceUSD = valuesData.map((v) => parseInt(v.priceUSD)).reduce((acc,v)=>{
+              return acc + v;
+            });
+          
+            this.result += 'Total (BRL:' + $scope.toPrice(priceBRL) + ' USD:' + $scope.toPrice(priceUSD) + ')\n';
+          
+            for (let i in arrResult) {
+              if (arrResult[i]) {
+                this.result += arrResult[i] + "\n";
+              }
+            }
         });
       },
       (error) => {
@@ -787,22 +843,6 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
   $scope.getObjLocal = function(key) {
     return JSON.parse(localStorage.getItem(key));
-  }
-
-  $scope.loadGames = function() {
-    console.log('load');
-    let query = 'https://api.mlab.com/api/1/databases/randomkeysbox/collections/games?apiKey=' + this.apiKey;
-    
-    $http({method: 'GET', url: query}).then(
-      (values) => {
-        let gamesmap = [];
-        for (let index in values) {
-          let obj = values[index];
-          gamesmap[obj.description] = obj;
-        }
-        $scope.setObjLocal('gamesmap',gamesmap);
-      } 
-    );
   }
 
   $scope.getGameKeysDB = function(params, limit) {
