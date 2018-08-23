@@ -621,21 +621,21 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
 
   $scope.executeFindKeysPromisse = function(promises) {
     $q.all(promises).then((values) => {
-      let arrResult = values.map((item)=>{
-        if (!item || !item.data || !item.data[0]) {
-          return undefined;
-        }
+      let products = values.filter(item => item && item.data && item.data[0])
+      .sort((a,b) => (a.data[0].priceBRL && b.data[0].priceBRL)? 
+      (b.data[0].priceBRL - a.data[0].priceBRL):1)
+      .map((item)=>{
         return item.data[0].description + '  ' + item.data[0].key;
       }); 
       
-      if (arrResult && arrResult.length > 0) {
-        $scope.addShowListDB(arrResult);
+      if (products && products.length > 0) {
+        $scope.addShowListDB(products);
       }
 
       this.result = '';
-      for (let i in arrResult) {
-        if (arrResult[i]) {
-          this.result += arrResult[i] + "\n";
+      for (let i in products) {
+        if (products[i]) {
+          this.result += products[i] + "\n";
         }
       }
     });
