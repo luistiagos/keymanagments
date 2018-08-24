@@ -2,6 +2,8 @@ var app = angular.module("appX", ['ngSanitize']);
 app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
   
   $scope.origem = 0;
+  $scope.formatBRL = false;
+  $scope.formatUSD = false;
 
   $scope.init = function() {
     this.apiKey = localStorage.getItem('ApiKey');
@@ -662,7 +664,11 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let command = arr[0].trim().split(':');
     let order = command[0].trim().toUpperCase();
     let direction = command[1].trim().toUpperCase();
-    let quantidade = parseInt(command[2].trim());
+    let quantidade = undefined;
+    
+    if (command.length > 2) {
+      quantidade = parseInt(command[2].trim());
+    }
   
     for (let i in arr) {
       let linha = arr[i].trim();
@@ -705,6 +711,14 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
             let arrResult = valuesData.map((item)=>{
               if (!item) {
                 return undefined;
+              }
+
+              if ($scope.formatBRL) {
+                return item.description + '  (' + $scope.toPrice(item.priceBRL) + ')';
+              }
+
+              if ($scope.formatUSD) {
+                return item.description + '  (' + $scope.toPrice(item.priceUSD) + ')';
               }
           
               return item.description + '  BRL:' + $scope.toPrice(item.priceBRL) + 

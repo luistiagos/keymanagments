@@ -26,11 +26,17 @@
 					<option value="13">Listar Random Games(Maior que)</option>
 					<option value="14">Listar Random Games Not Contains</option>
 					<option value="16">Listar Catalogo</option>
-					<option value="17">Listar Preços</option>
 					<option value="11">Gerar Reedem Code</option>
 					<option value="15">Gerar Texto Confirmação eBay</option>
 				</select>
-				<input type="checkbox" ng-show="origem == 1" ng-model="withkeys">With Keys</input>
+				<div ng-show="origem == 16">
+					<input type="checkbox" ng-show="origem == 1" ng-model="withkeys">With Keys</input>
+				</div>
+				<div>
+					<input type="checkbox" ng-model="formatBRL">Format BRL</input>
+					<br/>
+					<input type="checkbox" ng-model="formatUSD">Format USD</input>
+				</div>
 				<br>
 				<button ng-click="parse()">Execute Action</button>
 				<button ng-if="result" ng-click="copyAll()">Copy All</button>
