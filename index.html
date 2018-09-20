@@ -25,6 +25,7 @@
 					<option value="10">Listar Random Games</option>
 					<option value="13">Listar Random Games(Maior que)</option>
 					<option value="14">Listar Random Games Not Contains</option>
+					<option value="18">Listar Valor Minimo</option>
 					<option value="16">Listar Catalogo</option>
 					<option value="11">Gerar Reedem Code</option>
 					<option value="15">Gerar Texto Confirmação eBay</option>
@@ -41,6 +42,9 @@
 				<button ng-click="parse()">Execute Action</button>
 				<button ng-if="result" ng-click="copyAll()">Copy All</button>
 				<button ng-if="habilitaDeleteKeys()" ng-click="desativarKeys()">Delete All</button>
+			</div>
+			<div ng-if="valorTotal">
+				Total:{{valorTotal}}
 			</div>
 			<pre id="result" class="col-md-4" ng-bind-html="result" />     
 		</div>

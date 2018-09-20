@@ -11,6 +11,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
       this.countKeys = 0;
       this.countDiffKeys = 0;
       this.comando = 0;
+      this.valorTotal = "";
       $scope.updateCounters();
     }
   }
@@ -82,12 +83,16 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         $scope.findGamesPricesDB();
         this.comando = 17;
         break;
+      case 18:
+        $scope.listRandomGamesMinValueDB();
+        this.comando = 18;
+      break;
     }
   }
 
   $scope.habilitaDeleteKeys = function() {
     return this.comando == 9 || this.comando == 10 || this.comando == 12 ||
-    this.comando == 13 ||  this.commando == 14;
+    this.comando == 13 ||  this.commando == 14 || this.commando == 18;
   }
 
   $scope.keysRepeats = function() {
@@ -768,6 +773,65 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         }
 
         $scope.executeFindKeysPromisse(promises);
+      },
+      (error) => {
+        console.log('error',error);
+      }
+    );
+  }
+
+  $scope.listRandomGamesMinValueDB = function() {
+    let arr = $scope.keystext.trim().split(':');
+    let currency = arr[0].trim().toUpperCase();
+    let maxValue = parseInt(arr[1].trim());
+    let promises = [];
+    
+    $scope.listDistinctDB('randomkeysbox', 'gameskeys', 'description', {active:true})
+      .then((res)=>{
+        console.log('res',res);
+        let arrResult = res.data.values;
+
+        for (let i = 0;i < arrResult.length; i++) {
+          let description = arrResult[i].trim();
+          promises.push($scope.getGameKeysDB({description:description, active:true}));
+        }
+
+        $q.all(promises).then((values) => {
+          let products = values.filter(item => item && item.data && item.data[0])
+          .sort((a,b) => (a.data[0]['price'+currency] && b.data[0]['price'+currency])? 
+          (b.data[0]['price'+currency] - a.data[0]['price'+currency]):1);
+          
+          let listProducts = [];
+          let totalValue = 0;
+          
+          for (let i in products) {
+            let product = products[i].data[0];
+            if (product) {
+              listProducts.push(product);
+              totalValue += product['price'+currency];
+            }
+            if (totalValue > maxValue) {
+              break;
+            }
+          }
+
+          if (listProducts && listProducts.length > 0) {
+            listProducts = listProducts.map((item)=>{
+              return item.description + '  ' + item.key;
+            }); 
+
+            console.log('listProducts',listProducts);
+            
+            this.valorTotal = $scope.toPrice(totalValue) + ' ' + currency + '\n\n';
+
+            this.result = '';
+            for (let i in listProducts) {
+              if (listProducts[i]) {
+                this.result += listProducts[i] + "\n";
+              }
+            }
+          }
+        });
       },
       (error) => {
         console.log('error',error);
