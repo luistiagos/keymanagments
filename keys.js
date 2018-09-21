@@ -797,7 +797,8 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         }
 
         $q.all(promises).then((values) => {
-          let products = values.filter(item => item && item.data && item.data[0])
+          let products = values.filter(item => item && item.data && item.data[0] && 
+            item.data[0]['price'+currency] )
           .sort((a,b) => (a.data[0]['price'+currency] && b.data[0]['price'+currency])? 
           (b.data[0]['price'+currency] - a.data[0]['price'+currency]):1);
           
