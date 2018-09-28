@@ -80,13 +80,13 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         this.comando = 16;
         break;
       case 17:
-        $scope.findGamesPricesDB();
+        $scope.findGamesCatalogPricesDB();
         this.comando = 17;
         break;
       case 18:
         $scope.listRandomGamesMinValueDB();
         this.comando = 18;
-      break;
+        break;
     }
   }
 
@@ -519,6 +519,61 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     }
 
     $scope.executeFindKeysPromisse(promises);
+  }
+
+  $scope.findGamesCatalogPricesDB = function() {
+    let arr =  $scope.keystext.split('\n');
+    let promises = [];
+    let descriptions = [];
+    let currency = arr[0].trim().toUpperCase();
+    let fieldPrice = 'price'+currency;
+
+    for (let i=1;i<arr.length;i++) {
+      let linha = arr[i].trim();
+      descriptions.push(linha);
+    }
+
+    let query =  {description: { $exists: true, $in: descriptions }};
+
+    $scope.getGameDB(query)
+    .then((resp)=>{
+        let total = 0;
+        let values = resp.data;
+
+        let productWithoutPrices = descriptions.filter((desc) => {
+           return !values.find(value => value.description == desc);
+        });
+
+        let products = values.filter(item => (item && item[fieldPrice]))
+        .sort((a,b) => {return b[fieldPrice] - a[fieldPrice]})
+        .map((item)=>{
+          let product = item;
+          let price = product[fieldPrice];
+          total += (!price)?0:price;
+          let priceFormated = '';
+    
+          if (price) {
+            priceFormated = $scope.toPrice(price);
+          }
+    
+          return product.description + ' (' + priceFormated + ')';
+        }); 
+    
+        this.result = 'Total: ' + currency + ': ' + $scope.toPrice(total) + '\n';
+          for (let i in products) {
+            if (products[i]) {
+              this.result += products[i] + "\n";
+            }
+          }
+    
+          this.result += '\nNão Precificados: \n\n';
+          for (let i in productWithoutPrices) {
+            if (productWithoutPrices[i]) {
+              this.result += productWithoutPrices[i] + "\n";
+            }
+          }
+      
+    });
   }
 
   $scope.findGamesPricesDB = function() {
