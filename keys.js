@@ -334,10 +334,13 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
     let deferred = $q.defer();
 
     let currency = 'US';
-    let urlInfo = 'https://store.steampowered.com/api/appdetails?appids='+ product.appId +'&cc=' + currency;
+    
+    let urlInfo = 'http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?key=BFD299C7E0ED30211F81AA5D2DFBBB3D&appid='+ product.appId + 
+    '&cc=' + currency + '&format=json';
     
     $http({ method: 'GET',  url: urlInfo}).then(
       (info) => {
+         console.log('info', info);
          let data = info.data[product.appId].data;
          product.description = data.name;
          product.priceUSD = (data.price_overview)?data.price_overview.initial:undefined;
@@ -358,6 +361,7 @@ app.controller("appCtrl", function($scope, $sanitize, $http, $q) {
         );
       },
       (error) => {
+         console.log('error', error);
          deferred.reject(error);
       }
     );
